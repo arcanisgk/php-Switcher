@@ -1,130 +1,131 @@
 # PHP Switcher
 
-PHP Switcher es una aplicación de Windows que permite gestionar y cambiar fácilmente entre diferentes versiones de PHP en tu sistema. Esta enfocado para la Version usada en CLI.
+PHP Switcher is a Windows application that allows you to easily manage and switch between different PHP versions on your system. It is focused on the CLI version of PHP.
 
-## Características
+## Features
 
-- Descarga e instala múltiples versiones de PHP desde los repositorios oficiales
-- Cambia rápidamente entre versiones instaladas con un solo clic
-- Gestiona versiones Thread Safe y Non-Thread Safe
-- Interfaz gráfica intuitiva y fácil de usar
-- Configuración automática de variables de entorno
-- Soporte completo para PHP 5.x, 7.x y 8.x, incluyendo todas las versiones y formatos de compilador
+- Download and install multiple PHP versions from official repositories
+- Quickly switch between installed versions with a single click
+- Manage Thread Safe and Non-Thread Safe versions
+- Intuitive and easy-to-use graphical interface
+- Automatic environment variable configuration
+- Full support for PHP 5.x, 7.x, and 8.x, including all versions and compiler formats
+- Support for both x64 and x86 architectures
 
-## Requisitos del sistema
+## System Requirements
 
 - Windows 10/11
-- .NET 9.0 o superior
-- Permisos de administrador (para crear enlaces simbólicos)
+- .NET 9.0 or higher
+- Administrator permissions (to create symbolic links)
 
-## Instalación
+## Installation
 
-1. Descarga la última versión desde la sección de releases
-2. Ejecuta el instalador o extrae el archivo ZIP
-3. Ejecuta `PhpSwitcher.exe` como administrador
+1. Download the latest version from the releases section
+2. Run the installer or extract the ZIP file
+3. Run `PhpSwitcher.exe` as administrator
 
-## Uso
+## Usage
 
-### Instalación de versiones de PHP
+### Installing PHP Versions
 
-1. Ve a la pestaña "Available Versions"
-2. Selecciona la versión de PHP que deseas instalar
-3. Haz clic en "Download Selected Version(s)"
-4. Espera a que se complete la descarga e instalación
+1. Go to the "Available Versions" tab
+2. Select the PHP version you want to install
+3. Click on "Download Selected Version(s)"
+4. Wait for the download and installation to complete
 
-### Cambiar entre versiones de PHP
+### Switching Between PHP Versions
 
-1. Ve a la pestaña "Installed Versions"
-2. Selecciona la versión de PHP que deseas activar
-3. Haz clic en "Activate Selected Version"
-4. La versión seleccionada estará disponible inmediatamente en la línea de comandos
+1. Go to the "Installed Versions" tab
+2. Select the PHP version you want to activate
+3. Click on "Activate Selected Version"
+4. The selected version will be immediately available in the command line
 
-### Eliminar versiones de PHP
+### Removing PHP Versions
 
-1. Ve a la pestaña "Installed Versions"
-2. Selecciona la versión de PHP que deseas eliminar
-3. Haz clic en "Remove Selected Version"
-4. Confirma la eliminación
+1. Go to the "Installed Versions" tab
+2. Select the PHP version you want to remove
+3. Click on "Remove Selected Version"
+4. Confirm the removal
 
-## Cómo funciona
+## How It Works
 
-PHP Switcher crea un enlace simbólico en `C:\php` que apunta a la versión de PHP seleccionada. También asegura que `C:\php` esté en la variable de entorno PATH del sistema.
+PHP Switcher creates a symbolic link at `C:\php` that points to the selected PHP version. It also ensures that `C:\php` is in the system's PATH environment variable.
 
-## Desarrollo
+## Development
 
-### Requisitos para desarrollo
+### Development Requirements
 
-- Visual Studio 2022 o superior
+- Visual Studio 2022 or higher
 - .NET 9.0 SDK
 - Git
 
-### Clonar el repositorio
+### Cloning the Repository
 
 ```bash
-git clone https://github.com/tu-usuario/php-Switcher.git
+git clone https://github.com/your-username/php-Switcher.git
 cd php-Switcher
 ```
 
-### Compilación
+### Building
 
 ```bash
-# Compilación en modo Debug (desarrollo)
+# Build in Debug mode (development)
 dotnet build
 
-# Compilación en modo Release (producción)
+# Build in Release mode (production)
 dotnet build -c Release
 ```
 
-### Ejecución
+### Running
 
 ```bash
-# Ejecución normal
+# Normal execution
 dotnet run
 
-# Ejecución con consola visible (modo debug)
+# Execution with visible console (debug mode)
 dotnet run -- -c
 
-# Ejecución en modo desarrollo
+# Execution in development mode
 dotnet run -- -d
 ```
 
-### Generación de Ejecutable Independiente
+### Generating a Self-Contained Executable
 
-Para crear un ejecutable independiente que incluya todas las dependencias de .NET:
+To create a self-contained executable that includes all .NET dependencies:
 
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-El ejecutable se generará en la carpeta `bin\Release\net9.0-windows\win-x64\publish\`.
+The executable will be generated in the `bin\Release\net9.0-windows\win-x64\publish\` folder.
 
-### Creación de Instalador MSI
+### Creating an MSI Installer
 
-Para crear un instalador MSI, se utiliza WiX Toolset:
+To create an MSI installer, WiX Toolset is used:
 
-1. Instalar WiX Toolset:
+1. Install WiX Toolset:
 ```bash
 dotnet tool install --global wix
 ```
 
-2. Crear el archivo de configuración WiX (PhpSwitcher.wxs) en la carpeta Installer.
+2. Create the WiX configuration file (PhpSwitcher.wxs) in the Installer folder.
 
-3. Compilar el instalador:
+3. Build the installer:
 ```bash
 cd Installer
 wix build PhpSwitcher.wxs -out PhpSwitcher.msi
 ```
 
-El instalador MSI se generará en la carpeta `Installer\`.
+The MSI installer will be generated in the `Installer\` folder.
 
-### Estructura del proyecto
+### Project Structure
 
-Para entender la estructura del proyecto, consulta los siguientes archivos:
-- [structure.md](structure.md) - Estructura detallada del proyecto
-- [features.md](features.md) - Características implementadas
-- [task_pending.md](task_pending.md) - Tareas completadas
-- [CHANGELOG.md](CHANGELOG.md) - Historial de cambios
+To understand the project structure, check the following files:
+- [structure.md](structure.md) - Detailed project structure
+- [features.md](features.md) - Implemented features
+- [task_pending.md](task_pending.md) - Completed tasks
+- [CHANGELOG.md](CHANGELOG.md) - Change history
 
-## Licencia
+## License
 
-Este proyecto está licenciado bajo la licencia MIT - ver el archivo LICENSE para más detalles.
+This project is licensed under the MIT License - see the LICENSE file for details.
