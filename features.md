@@ -16,14 +16,18 @@ Este documento registra las características que ya han sido implementadas en el
   - Proporciona retroalimentación visual al usuario durante el inicio de la aplicación.
   - Muestra información de versión (v1.0.1).
   - Maneja adecuadamente la transición de cargador a aplicación principal.
+  - Muestra el logo PHP en una posición optimizada para evitar solapamiento con el título.
+  - Aplica el icono de la aplicación para una visualización consistente en la barra de tareas.
 
 ### Ventana Principal (MainForm)
 - **Estado**: ✅ Completado
 - **Descripción**: La ventana principal de la aplicación proporciona una interfaz con pestañas para gestionar versiones de PHP.
 - **Detalles técnicos**:
   - Contiene una interfaz limpia y moderna con pestañas para diferentes funciones.
-  - Incluye una barra de estado con información en tiempo real.
+  - Diseño de tamaño fijo (no redimensionable) para una experiencia de usuario consistente.
+  - Incluye una barra de estado optimizada con información en tiempo real.
   - Proporciona controles intuitivos para gestionar versiones de PHP.
+  - Aplica el icono de la aplicación para una visualización consistente en la barra de tareas y en la ventana.
 
 ## Características Actuales
 
@@ -49,8 +53,13 @@ Este documento registra las características que ya han sido implementadas en el
 - **Estado**: ✅ Completado
 - **Descripción**: Obtiene automáticamente las versiones PHP disponibles desde el sitio web oficial.
 - **Detalles técnicos**:
-  - Se conecta a "https://windows.php.net/downloads/releases/archives/" con un User-Agent similar a un navegador.
-  - Extrae solo versiones x64 (tanto Thread Safe como Non-Thread Safe).
+  - Se conecta exclusivamente a "https://windows.php.net/downloads/releases/archives/" para obtener todas las versiones disponibles, incluyendo las más recientes.
+  - Utiliza una expresión regular mejorada para capturar correctamente todos los formatos de nombres de archivo, incluyendo:
+    - Versiones NTS y TS
+    - Todos los formatos de compilador (VC6, VC9, VC11, VC14, VC15, vs16, vs17, etc.)
+    - Arquitecturas x64 y x86
+    - Todas las versiones de PHP (5.x, 7.x, 8.x)
+  - Extrae preferentemente versiones x64, con fallback a x86 cuando no hay versiones x64 disponibles.
   - Identifica la última versión de parche para cada versión menor con una propiedad "last-patch".
   - Filtra para mostrar solo la última versión de parche para cada versión menor.
   - Ordena las versiones por número con las más recientes primero.
@@ -130,9 +139,11 @@ Este documento registra las características que ya han sido implementadas en el
 - **Descripción**: Una barra de estado en la parte inferior de la ventana principal que proporciona información en tiempo real.
 - **Detalles técnicos**:
   - Muestra el estado de operación actual.
-  - Muestra progreso de descarga/instalación.
-  - Indica la versión PHP actualmente activa.
-  - Proporciona retroalimentación visual durante operaciones.
+  - Incluye una barra de progreso permanente alineada a la izquierda con tamaño fijo.
+  - Muestra mensajes de estado inmediatamente después de la barra de progreso.
+  - Indica la versión PHP actualmente activa alineada a la derecha.
+  - Proporciona retroalimentación visual durante operaciones de descarga/instalación.
+  - Diseño optimizado para mejor legibilidad y experiencia de usuario.
 
 ## Características Adicionales
 
@@ -181,4 +192,25 @@ Este documento registra las características que ya han sido implementadas en el
   - Registro detallado del proceso de sincronización para facilitar la depuración.
   - Manejo robusto de errores durante el proceso de sincronización.
 
-Para una lista completa de todas las tareas completadas que estaban previamente pendientes, consulte el archivo `task_pending.md`.
+## Distribución y Despliegue
+
+PHP Switcher incluye características completas para su distribución y despliegue:
+
+1. **Ejecutable Independiente (Self-Contained)**
+   - Generación de un único archivo ejecutable que incluye todas las dependencias
+   - No requiere instalación de .NET en el sistema del usuario
+   - Incluye todos los recursos necesarios (iconos, imágenes)
+   - Optimizado para rendimiento en producción
+
+2. **Instalador MSI para Windows**
+   - Instalador profesional creado con WiX Toolset
+   - Instalación y desinstalación sencilla a través del Panel de Control de Windows
+   - Creación automática de accesos directos en el menú de inicio
+   - Configuración de iconos y asociaciones de archivos
+
+3. **Solicitud Automática de Privilegios de Administrador**
+   - Detección de privilegios al iniciar la aplicación
+   - Solicitud automática de elevación si es necesario
+   - Reinicio con privilegios elevados sin intervención del usuario
+
+El desarrollo de PHP Switcher se ha completado satisfactoriamente. Todas las características planeadas han sido implementadas y el proyecto se considera finalizado en su estado actual. La aplicación está lista para ser distribuida a los usuarios finales mediante el instalador MSI o el ejecutable independiente. Para una lista completa de todas las tareas completadas, consulte el archivo `task_pending.md`.

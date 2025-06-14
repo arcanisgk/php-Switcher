@@ -42,41 +42,40 @@ La migración del script PowerShell original a una aplicación C# con Windows Fo
 - Barra de estado con información en tiempo real
 - Modos de consola oculta y desarrollo
 
-## Funcionalidades Pendientes
+## Enfoque del Proyecto
 
-Las siguientes funcionalidades aún necesitan ser implementadas:
+PHP Switcher está enfocado exclusivamente para la versión de PHP usada en CLI (Command Line Interface). Las funcionalidades relacionadas con servidores web y otras integraciones no serán implementadas, ya que están fuera del alcance del proyecto.
 
-1. **Integración con Servidor Web**
-   - Detección de servidores web instalados
-   - Configuración para IIS y Apache
-   - Gestión de servicios web
+## Mejoras Futuras Planeadas
 
-2. **Gestión de Extensiones PHP**
-   - Listar y gestionar extensiones para cada versión
-   - Modificación de php.ini para habilitar/deshabilitar extensiones
+Las siguientes mejoras están planeadas para futuras versiones:
 
-3. **Optimización de Rendimiento**
+1. **Optimización de Rendimiento**
    - Implementar HttpClient moderno para descargas
    - Mejorar la retroalimentación visual durante operaciones
+   - Implementar selección de espejos para descarga
+   - Soporte para descargas paralelas
 
-4. **Aplicación Ejecutable Independiente**
+2. **Configuración PHP Básica**
+   - Crear plantillas de configuración PHP predefinidas para CLI
+   - Agregar asistente para configuración de ajustes PHP comunes para CLI
+
+3. **Aplicación Ejecutable Independiente**
    - Crear versión ejecutable para distribución
    - Configurar solicitud automática de privilegios
 
-5. **Mejoras Técnicas**
+4. **Mejoras Técnicas**
    - Refactorización de código para mejor mantenibilidad
    - Implementación de pruebas unitarias
    - Mejora de la documentación de código
-   - Soporte para múltiples idiomas
-   - Mejoras de accesibilidad
 
 ## Próximos Pasos Recomendados
 
-1. Completar la implementación de las funcionalidades básicas pendientes
+1. Optimizar el rendimiento de las descargas e instalaciones
 2. Realizar pruebas exhaustivas de las funcionalidades existentes
 3. Refactorizar el código para mejorar la calidad y mantenibilidad
 4. Implementar pruebas unitarias para los componentes críticos
 5. Crear un ejecutable independiente para facilitar la distribución
 6. Documentar el código con comentarios XML para generar documentación de API
 
-Este proyecto tiene un gran potencial para convertirse en una herramienta útil para desarrolladores PHP en Windows, proporcionando una interfaz gráfica intuitiva para gestionar múltiples versiones de PHP en un mismo sistema.
+Este proyecto proporciona una interfaz gráfica intuitiva para gestionar múltiples versiones de PHP en la línea de comandos de Windows, facilitando a los desarrolladores el cambio entre diferentes versiones de PHP para sus proyectos.

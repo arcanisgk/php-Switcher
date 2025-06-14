@@ -16,6 +16,13 @@ namespace PhpSwitcher.Models
         public bool DevMode { get; set; } = false;
         
         /// <summary>
+        /// Indicates whether a background update of PHP versions is in progress.
+        /// This is not serialized to JSON.
+        /// </summary>
+        [JsonIgnore]
+        public bool IsBackgroundUpdateInProgress { get; set; } = false;
+        
+        /// <summary>
         /// Gets the active PHP version from the installed versions list.
         /// </summary>
         /// <returns>The active PHP version, or null if no version is active.</returns>
@@ -30,7 +37,8 @@ namespace PhpSwitcher.Models
         public string Version { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public bool IsNTS { get; set; }
-        public string DisplayName => $"PHP {Version} {(IsNTS ? "(Non-Thread Safe)" : "(Thread Safe)")}";
+        public bool IsX64 { get; set; }
+        public string DisplayName => $"PHP {Version} {(IsNTS ? "(Non-Thread Safe)" : "(Thread Safe)")} {(IsX64 ? "(x64)" : "(x86)")}";
         public string DownloadUrl { get; set; } = string.Empty;
         
         [JsonPropertyName("last-patch")]
@@ -41,10 +49,11 @@ namespace PhpSwitcher.Models
     {
         public string Version { get; set; } = string.Empty;
         public bool IsNTS { get; set; }
+        public bool IsX64 { get; set; }
         public string InstallPath { get; set; } = string.Empty;
         public DateTime InstallDate { get; set; }
         public bool IsActive { get; set; }
         
-        public string DisplayName => $"PHP {Version} {(IsNTS ? "(Non-Thread Safe)" : "(Thread Safe)")}";
+        public string DisplayName => $"PHP {Version} {(IsNTS ? "(Non-Thread Safe)" : "(Thread Safe)")} {(IsX64 ? "(x64)" : "(x86)")}";
     }
 }

@@ -18,6 +18,9 @@ namespace PhpSwitcher.Forms
         private readonly Label _activePhpLabel;
         private readonly Label _statusLabel;
         private readonly ProgressBar _progressBar;
+        private ListView _installedVersionsListView; // Agregamos un campo para el ListView de versiones instaladas
+        
+        private System.Windows.Forms.Timer _backgroundUpdateTimer;
         
         public MainForm(AppConfig config)
         {
@@ -25,34 +28,68 @@ namespace PhpSwitcher.Forms
             
             InitializeComponent();
             
+            // Set application icon
+            try
+            {
+                this.Icon = PhpSwitcher.Resources.AppResources.GetApplicationIcon();
+                LogService.Log("Application icon loaded successfully in MainForm", LogLevel.DEBUG);
+            }
+            catch (Exception ex)
+            {
+                LogService.Log($"Failed to load application icon in MainForm: {ex.Message}", LogLevel.ERROR);
+            }
+            
             // Set up status bar
+            // 1. Progress bar aligned to the left with fixed size
+            _progressBar = new ProgressBar
+            {
+                Dock = DockStyle.Left,
+                Width = 150,
+                Visible = true, // Always visible
+                Margin = new Padding(5, 3, 0, 3)
+            };
+            
+            // 2. Status label positioned after progress bar with 10px spacing
             _statusLabel = new Label
             {
                 Text = "Ready",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(5, 0, 0, 0)
+                Padding = new Padding(10, 0, 0, 0),
+                Margin = new Padding(10, 0, 0, 0)
             };
             
+            // Set up timer to check for background updates
+            _backgroundUpdateTimer = new System.Windows.Forms.Timer
+            {
+                Interval = 1000, // Check every second
+                Enabled = true
+            };
+            _backgroundUpdateTimer.Tick += BackgroundUpdateTimer_Tick;
+            
+            // 3. Active PHP version aligned to the right
             _activePhpLabel = new Label
             {
                 Text = "PHP: Not active",
-                Dock = DockStyle.Right,
+                Dock = DockStyle.None,
+                AutoSize = false,
                 TextAlign = ContentAlignment.MiddleRight,
                 Width = 200,
                 Padding = new Padding(0, 0, 5, 0)
             };
             
-            _progressBar = new ProgressBar
-            {
-                Dock = DockStyle.Right,
-                Width = 150,
-                Visible = false
-            };
+            // Add controls to status strip in the correct order
+            var progressBarHost = new ToolStripControlHost(_progressBar) { Alignment = ToolStripItemAlignment.Left };
+            var statusLabelHost = new ToolStripControlHost(_statusLabel);
+            var activePhpLabelHost = new ToolStripControlHost(_activePhpLabel) { Alignment = ToolStripItemAlignment.Right };
             
-            statusStrip.Items.Add(new ToolStripControlHost(_statusLabel));
-            statusStrip.Items.Add(new ToolStripControlHost(_progressBar));
-            statusStrip.Items.Add(new ToolStripControlHost(_activePhpLabel));
+            // Configure the status strip layout
+            statusStrip.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
+            
+            // Add items in the correct order
+            statusStrip.Items.Add(progressBarHost);
+            statusStrip.Items.Add(statusLabelHost);
+            statusStrip.Items.Add(activePhpLabelHost);
             
             // Check active PHP version
             CheckActivePhpVersion();
@@ -134,10 +171,43 @@ namespace PhpSwitcher.Forms
             }
         }
         
+        private void BackgroundUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            // Check if a background update is in progress
+            if (_config.IsBackgroundUpdateInProgress)
+            {
+                // Show progress animation
+                if (_progressBar.Style != ProgressBarStyle.Marquee)
+                {
+                    _progressBar.Style = ProgressBarStyle.Marquee;
+                    _progressBar.MarqueeAnimationSpeed = 30;
+                }
+                
+                // Update status label
+                _statusLabel.Text = "Updating PHP versions in background...";
+            }
+            else
+            {
+                // Reset progress bar if it was in marquee mode
+                if (_progressBar.Style == ProgressBarStyle.Marquee)
+                {
+                    _progressBar.Style = ProgressBarStyle.Continuous;
+                    _progressBar.Value = 0;
+                    _statusLabel.Text = "Ready";
+                    
+                    // Refresh the available versions tab if it's currently visible
+                    if (tabControl.SelectedIndex == 1) // Available Versions tab
+                    {
+                        InitializeAvailableVersionsTab();
+                    }
+                }
+            }
+        }
+        
         private void InitializeInstalledVersionsTab()
         {
             // Add a ListView to display installed PHP versions
-            var installedVersionsListView = new ListView
+            _installedVersionsListView = new ListView
             {
                 View = View.Details,
                 FullRowSelect = true,
@@ -147,16 +217,17 @@ namespace PhpSwitcher.Forms
             };
             
             // Add columns to the ListView
-            installedVersionsListView.Columns.Add("Version", 100);
-            installedVersionsListView.Columns.Add("Type", 150);
-            installedVersionsListView.Columns.Add("Installation Path", 250);
-            installedVersionsListView.Columns.Add("Install Date", 120);
-            installedVersionsListView.Columns.Add("Status", 100);
+            _installedVersionsListView.Columns.Add("Version", 100);
+            _installedVersionsListView.Columns.Add("Type", 150);
+            _installedVersionsListView.Columns.Add("Architecture", 100);
+            _installedVersionsListView.Columns.Add("Installation Path", 250);
+            _installedVersionsListView.Columns.Add("Install Date", 120);
+            _installedVersionsListView.Columns.Add("Status", 100);
             
             // Populate the ListView with installed PHP versions
-            UpdateInstalledVersionsList(installedVersionsListView);
+            UpdateInstalledVersionsList(_installedVersionsListView);
             
-            installedTab.Controls.Add(installedVersionsListView);
+            installedTab.Controls.Add(_installedVersionsListView);
             
             // Add an activate button
             var activateButton = new Button
@@ -168,7 +239,7 @@ namespace PhpSwitcher.Forms
             
             activateButton.Click += (sender, e) =>
             {
-                if (installedVersionsListView.SelectedItems.Count == 0)
+                if (_installedVersionsListView.SelectedItems.Count == 0)
                 {
                     MessageBox.Show(
                         "Please select a PHP version to activate.",
@@ -178,7 +249,7 @@ namespace PhpSwitcher.Forms
                     return;
                 }
                 
-                if (installedVersionsListView.SelectedItems.Count > 1)
+                if (_installedVersionsListView.SelectedItems.Count > 1)
                 {
                     MessageBox.Show(
                         "Please select only one PHP version to activate.",
@@ -188,7 +259,7 @@ namespace PhpSwitcher.Forms
                     return;
                 }
                 
-                var selectedVersion = installedVersionsListView.SelectedItems[0].Tag as InstalledPhpVersion;
+                var selectedVersion = _installedVersionsListView.SelectedItems[0].Tag as InstalledPhpVersion;
                 if (selectedVersion == null)
                 {
                     MessageBox.Show(
@@ -225,7 +296,7 @@ namespace PhpSwitcher.Forms
                     }
                     
                     ConfigService.SaveConfiguration(_config);
-                    UpdateInstalledVersionsList(installedVersionsListView);
+                    UpdateInstalledVersionsList(_installedVersionsListView);
                     
                     // Update status label to show completion
                     _statusLabel.Text = "Ready";
@@ -264,7 +335,7 @@ namespace PhpSwitcher.Forms
             
             removeButton.Click += (sender, e) =>
             {
-                if (installedVersionsListView.SelectedItems.Count == 0)
+                if (_installedVersionsListView.SelectedItems.Count == 0)
                 {
                     MessageBox.Show(
                         "Please select a PHP version to remove.",
@@ -276,7 +347,7 @@ namespace PhpSwitcher.Forms
                 
                 // Get selected versions
                 var selectedVersions = new List<InstalledPhpVersion>();
-                foreach (ListViewItem item in installedVersionsListView.SelectedItems)
+                foreach (ListViewItem item in _installedVersionsListView.SelectedItems)
                 {
                     var version = item.Tag as InstalledPhpVersion;
                     if (version != null)
@@ -375,7 +446,7 @@ namespace PhpSwitcher.Forms
                 ConfigService.SaveConfiguration(_config);
                 
                 // Update UI
-                UpdateInstalledVersionsList(installedVersionsListView);
+                UpdateInstalledVersionsList(_installedVersionsListView);
                 
                 // Update active PHP label
                 CheckActivePhpVersion();
@@ -445,17 +516,49 @@ namespace PhpSwitcher.Forms
                                 var version = match.Groups[1].Value;
                                 var isNTS = dirName.Contains("-nts");
                                 
+                                // Determine if this is an x64 or x86 version
+                                bool isX64 = false;
+                                
+                                // Check if php.exe is 64-bit
+                                try
+                                {
+                                    var phpExePath = Path.Combine(dir, "php.exe");
+                                    using (var stream = new FileStream(phpExePath, FileMode.Open, FileAccess.Read))
+                                    {
+                                        stream.Seek(0x3C, SeekOrigin.Begin);
+                                        var peOffset = new byte[4];
+                                        stream.Read(peOffset, 0, 4);
+                                        var offset = BitConverter.ToInt32(peOffset, 0);
+                                        
+                                        stream.Seek(offset + 4, SeekOrigin.Begin);
+                                        var machineType = new byte[2];
+                                        stream.Read(machineType, 0, 2);
+                                        
+                                        // 0x8664 is the machine type for x64
+                                        isX64 = BitConverter.ToUInt16(machineType, 0) == 0x8664;
+                                    }
+                                    
+                                    LogService.Log($"Detected PHP {version} as {(isX64 ? "x64" : "x86")} architecture", LogLevel.DEBUG);
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogService.Log($"Error determining architecture for PHP {version}: {ex.Message}. Assuming x86.", LogLevel.WARNING);
+                                    isX64 = false;
+                                }
+                                
                                 // Check if this version is already in the configuration
                                 var existingVersion = _config.InstalledVersions.FirstOrDefault(
-                                    v => v.Version == version && v.IsNTS == isNTS);
+                                    v => v.Version == version && v.IsNTS == isNTS && v.IsX64 == isX64);
                                 
                                 if (existingVersion == null)
                                 {
-                                    // Add to configuration
+                                    // Add to configuration using the already detected architecture
+                                    
                                     var newInstalledVersion = new InstalledPhpVersion
                                     {
                                         Version = version,
                                         IsNTS = isNTS,
+                                        IsX64 = isX64,
                                         InstallPath = dir,
                                         InstallDate = DateTime.Now,
                                         IsActive = false
@@ -476,7 +579,7 @@ namespace PhpSwitcher.Forms
                     }
                     
                     ConfigService.SaveConfiguration(_config);
-                    UpdateInstalledVersionsList(installedVersionsListView);
+                    UpdateInstalledVersionsList(_installedVersionsListView);
                     
                     _statusLabel.Text = "Installed PHP versions refreshed.";
                 }
@@ -603,27 +706,29 @@ namespace PhpSwitcher.Forms
             // Add columns to the ListView
             availableVersionsListView.Columns.Add("Version", 100);
             availableVersionsListView.Columns.Add("Type", 150);
+            availableVersionsListView.Columns.Add("Architecture", 100);
             availableVersionsListView.Columns.Add("Filename", 250);
             availableVersionsListView.Columns.Add("Status", 100);
             availableVersionsListView.Columns.Add("Installation Status", 120);
             
-            // Populate the ListView with available PHP versions - only showing latest patch for each minor version
+            // Populate the ListView with available PHP versions - showing all versions
             if (_config.AvailableVersions != null && _config.AvailableVersions.Count > 0)
             {
                 // Filter to only show versions with last-patch = true
                 var latestVersions = _config.AvailableVersions.Where(v => v.IsLastPatch).ToList();
                 
-                LogService.Log($"Showing only latest patch versions. Total versions: {_config.AvailableVersions.Count}, Latest patch versions: {latestVersions.Count}", LogLevel.DEBUG);
+                LogService.Log($"Showing all latest patch versions. Total versions: {_config.AvailableVersions.Count}, Latest patch versions: {latestVersions.Count}", LogLevel.DEBUG);
                 
                 foreach (var version in latestVersions)
                 {
                     var item = new ListViewItem(version.Version);
                     item.SubItems.Add(version.IsNTS ? "Non-Thread Safe" : "Thread Safe");
+                    item.SubItems.Add(version.IsX64 ? "x64" : "x86");
                     item.SubItems.Add(version.FileName);
                     item.SubItems.Add("Available");
                     
                     // Check if this version is installed
-                    var isInstalled = PhpVersionService.IsVersionInstalled(_config, version.Version, version.IsNTS);
+                    var isInstalled = PhpVersionService.IsVersionInstalled(_config, version.Version, version.IsNTS, version.IsX64);
                     item.SubItems.Add(isInstalled ? "Installed" : "");
                     
                     item.Tag = version;
@@ -902,8 +1007,7 @@ namespace PhpSwitcher.Forms
                         }
                     }
                     
-                    // Show progress bar
-                    _progressBar.Visible = true;
+                    // Reset progress bar
                     _progressBar.Value = 0;
                     
                     // Download and install
@@ -971,6 +1075,9 @@ namespace PhpSwitcher.Forms
                                 
                                 // Update active PHP label
                                 CheckActivePhpVersion();
+                                
+                                // Update installed versions list in the UI
+                                UpdateInstalledVersionsList(_installedVersionsListView);
                             }
                             else
                             {
@@ -980,6 +1087,9 @@ namespace PhpSwitcher.Forms
                         else
                         {
                             _statusLabel.Text = $"PHP {version.Version} installed successfully.";
+                            
+                            // Update installed versions list in the UI
+                            UpdateInstalledVersionsList(_installedVersionsListView);
                         }
                         
                         // Update the ListView to show installed status
@@ -999,12 +1109,15 @@ namespace PhpSwitcher.Forms
                         failCount++;
                     }
                     
-                    // Hide progress bar
-                    _progressBar.Visible = false;
+                    // Reset progress bar when done
+                    _progressBar.Value = 0;
                 }
                 
                 // Re-enable the button
                 downloadButton.Enabled = true;
+                
+                // Ensure the installed versions list is updated
+                UpdateInstalledVersionsList(_installedVersionsListView);
                 
                 // Show summary
                 if (successCount > 0 && failCount == 0)
@@ -1222,7 +1335,6 @@ namespace PhpSwitcher.Forms
             this.availableTab = new System.Windows.Forms.TabPage();
             this.settingsTab = new System.Windows.Forms.TabPage();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
-            this.exitButton = new System.Windows.Forms.Button();
             this.tabControl.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -1272,25 +1384,20 @@ namespace PhpSwitcher.Forms
             this.statusStrip.Location = new System.Drawing.Point(0, 539);
             this.statusStrip.Name = "statusStrip";
             this.statusStrip.Size = new System.Drawing.Size(784, 22);
+            this.statusStrip.SizingGrip = false;
             this.statusStrip.TabIndex = 1;
             this.statusStrip.Text = "statusStrip1";
             // 
-            // exitButton
-            // 
-            this.exitButton.Location = new System.Drawing.Point(680, 560);
-            this.exitButton.Name = "exitButton";
-            this.exitButton.Size = new System.Drawing.Size(100, 30);
-            this.exitButton.TabIndex = 2;
-            this.exitButton.Text = "Exit";
-            this.exitButton.UseVisualStyleBackColor = true;
-            this.exitButton.Click += new System.EventHandler(this.exitButton_Click);
+
             // 
             // MainForm
             // 
             this.ClientSize = new System.Drawing.Size(784, 561);
-            this.Controls.Add(this.exitButton);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.tabControl);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "PHP Switcher";
@@ -1298,12 +1405,6 @@ namespace PhpSwitcher.Forms
             this.tabControl.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
-        }
-        
-        private void exitButton_Click(object sender, EventArgs e)
-        {
-            LogService.Log("Application closed by user.", LogLevel.WARNING);
-            Close();
         }
         
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -1316,6 +1417,5 @@ namespace PhpSwitcher.Forms
         private System.Windows.Forms.TabPage availableTab;
         private System.Windows.Forms.TabPage settingsTab;
         private System.Windows.Forms.StatusStrip statusStrip;
-        private System.Windows.Forms.Button exitButton;
     }
 }

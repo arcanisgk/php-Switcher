@@ -30,7 +30,9 @@ php-Switcher/
 ├── Utils/                      # Utilidades
 │   └── AdminUtils.cs           # Utilidades para verificar y solicitar privilegios de administrador
 ├── Resources/                  # Recursos de la aplicación
-│   └── AppResources.cs         # Clase para gestionar recursos como iconos
+│   ├── AppResources.cs         # Clase para gestionar recursos como iconos
+│   ├── favicon.ico             # Icono principal de la aplicación
+│   └── icon.png                # Logo PHP para el splash screen
 ├── Program.cs                  # Punto de entrada de la aplicación
 ├── PhpSwitcher.csproj          # Archivo de proyecto de .NET
 └── README.md                   # Documentación del proyecto
@@ -115,6 +117,34 @@ La aplicación admite tres modos de operación diferentes:
    - Habilita automáticamente las características del modo debug
    - Accesible a través del botón "Restart in Development Mode" en la pestaña Settings
 
+## Estructura de Distribución
+
+La aplicación se distribuye en dos formatos principales:
+
+### Ejecutable Independiente (Self-Contained)
+
+```
+publish/
+├── Resources/                # Recursos de la aplicación
+│   ├── favicon.ico           # Icono de la aplicación
+│   └── icon.png              # Logo PHP para el splash screen
+├── PhpSwitcher.exe           # Ejecutable principal que incluye todas las dependencias
+└── PhpSwitcher.pdb           # Archivo de símbolos para depuración (opcional)
+```
+
+Este formato incluye todas las dependencias de .NET y puede ejecutarse en cualquier sistema Windows sin necesidad de instalar .NET 9.0.
+
+### Instalador MSI
+
+```
+Installer/
+├── PhpSwitcher.msi           # Instalador MSI para Windows
+├── PhpSwitcher.wixpdb        # Archivo de base de datos de WiX (para desarrollo)
+└── PhpSwitcher.wxs           # Archivo de configuración de WiX (para desarrollo)
+```
+
+El instalador MSI permite instalar la aplicación en sistemas Windows con todas sus dependencias, crear accesos directos en el menú de inicio y facilitar la desinstalación.
+
 ## Notas Adicionales
 
 - El proyecto está diseñado para funcionar en entornos Windows.
@@ -125,3 +155,4 @@ La aplicación admite tres modos de operación diferentes:
 - La configuración se persiste entre sesiones en un archivo JSON.
 - La aplicación puede detectar y listar versiones PHP disponibles desde windows.php.net con experiencia de usuario mejorada, incluyendo indicadores visuales de carga y retroalimentación inmediata.
 - Los elementos de UI se sincronizan automáticamente al realizar operaciones, eliminando la necesidad de actualización manual en la mayoría de los casos.
+- El ejecutable independiente y el instalador MSI incluyen todos los recursos necesarios para el funcionamiento de la aplicación.

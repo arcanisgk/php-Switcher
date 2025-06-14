@@ -21,7 +21,37 @@ namespace PhpSwitcher.Forms
             _config = ConfigService.LoadConfiguration();
             
             // Set version label
-            versionLabel.Text = "v1.0.1";
+            versionLabel.Text = "v1.0.2";
+            
+            // Set application icon
+            try
+            {
+                this.Icon = PhpSwitcher.Resources.AppResources.GetApplicationIcon();
+                LogService.Log("Application icon loaded successfully", LogLevel.DEBUG);
+            }
+            catch (Exception ex)
+            {
+                LogService.Log($"Failed to load application icon: {ex.Message}", LogLevel.ERROR);
+            }
+            
+            // Set PHP logo
+            try
+            {
+                var phpLogo = PhpSwitcher.Resources.AppResources.GetPhpLogo();
+                if (phpLogo != null)
+                {
+                    logoPictureBox.Image = phpLogo;
+                    LogService.Log("PHP logo loaded successfully", LogLevel.DEBUG);
+                }
+                else
+                {
+                    LogService.Log("PHP logo not found", LogLevel.WARNING);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Log($"Failed to load PHP logo: {ex.Message}", LogLevel.ERROR);
+            }
             
             // Start initialization after a short delay
             var timer = new System.Windows.Forms.Timer
@@ -137,55 +167,120 @@ namespace PhpSwitcher.Forms
                 SynchronizeInstalledVersions();
                 
                 // Step 4: Fetch available PHP versions
-                statusLabel.Text = "Searching for Official PHP package on php.net archives...";
+                statusLabel.Text = "Checking for PHP versions...";
                 progressBar.Value = 60;
                 Refresh();
-                LogService.Log("Fetching available PHP versions from windows.php.net...", LogLevel.DEBUG);
+                LogService.Log("Checking for available PHP versions...", LogLevel.DEBUG);
                 
                 // Check if we need to update the PHP versions list
-                bool updateNeeded = true;
+                bool updateNeeded = false;
                 
                 // In the final release, we should only update once a week
                 if (_config.LastUpdated.HasValue)
                 {
                     var daysSinceUpdate = (DateTime.Now - _config.LastUpdated.Value).Days;
                     
-                    // For development, always update (comment out this condition in final release)
-                    // updateNeeded = daysSinceUpdate >= 7;
+                    // Only update if it's been more than 7 days since the last update
+                    updateNeeded = daysSinceUpdate >= 7;
                     
                     LogService.Log($"Last update was {daysSinceUpdate} days ago. Update needed: {updateNeeded}", LogLevel.DEBUG);
                 }
+                else
+                {
+                    // If we've never updated before, we need to update
+                    updateNeeded = true;
+                    LogService.Log("No previous update found. Update needed.", LogLevel.DEBUG);
+                }
                 
+                // Check if we have cached versions available
+                bool hasCachedVersions = _config.AvailableVersions != null && _config.AvailableVersions.Count > 0;
+                
+                if (hasCachedVersions)
+                {
+                    LogService.Log($"Found {_config.AvailableVersions.Count} cached PHP versions.", LogLevel.DEBUG);
+                    statusLabel.Text = "Using cached PHP versions...";
+                    Refresh();
+                }
+                
+                // If we need to update and we're online, start a background task to update the versions
                 if (updateNeeded)
                 {
-                    try
+                    // If we have cached versions, use them first and update in the background
+                    if (hasCachedVersions)
                     {
-                        var phpVersions = await PhpVersionService.FetchAvailablePhpVersionsAsync();
+                        // Start a background task to update the versions
+                        LogService.Log("Starting background update of PHP versions...", LogLevel.DEBUG);
+                        statusLabel.Text = "Starting background update of PHP versions...";
+                        Refresh();
                         
-                        if (phpVersions != null && phpVersions.Count > 0)
-                        {
-                            // Update configuration with available versions
-                            _config.AvailableVersions = phpVersions;
-                            _config.LastUpdated = DateTime.Now;
-                            ConfigService.SaveConfiguration(_config);
-                            
-                            LogService.Log($"Found {phpVersions.Count} unique PHP versions available for download.", LogLevel.DEBUG);
-                        }
-                        else
-                        {
-                            LogService.Log("Failed to fetch PHP versions or no versions found.", LogLevel.WARNING);
-                        }
+                        // Start the update in a background task
+                        _config.IsBackgroundUpdateInProgress = true;
+                        Task.Run(async () => {
+                            try
+                            {
+                                LogService.Log("Background update of PHP versions started.", LogLevel.DEBUG);
+                                var phpVersions = await PhpVersionService.FetchAvailablePhpVersionsAsync();
+                                
+                                if (phpVersions != null && phpVersions.Count > 0)
+                                {
+                                    // Update configuration with available versions
+                                    _config.AvailableVersions = phpVersions;
+                                    _config.LastUpdated = DateTime.Now;
+                                    ConfigService.SaveConfiguration(_config);
+                                    
+                                    LogService.Log($"Background update complete. Found {phpVersions.Count} unique PHP versions.", LogLevel.DEBUG);
+                                }
+                                else
+                                {
+                                    LogService.Log("Background update failed to fetch PHP versions or no versions found.", LogLevel.WARNING);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Log($"Error in background update of PHP versions: {ex.Message}", LogLevel.ERROR);
+                            }
+                            finally
+                            {
+                                _config.IsBackgroundUpdateInProgress = false;
+                            }
+                        });
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        LogService.Log($"Error fetching PHP versions: {ex.Message}", LogLevel.ERROR);
-                        // Continue even if this fails - we can try again later
-                        LogService.Log("Warning: Failed to fetch PHP versions. Will try again later.", LogLevel.WARNING);
+                        // If we don't have cached versions, we need to wait for the update
+                        statusLabel.Text = "Fetching PHP versions from windows.php.net...";
+                        Refresh();
+                        LogService.Log("Fetching PHP versions from windows.php.net...", LogLevel.DEBUG);
+                        
+                        try
+                        {
+                            var phpVersions = await PhpVersionService.FetchAvailablePhpVersionsAsync();
+                            
+                            if (phpVersions != null && phpVersions.Count > 0)
+                            {
+                                // Update configuration with available versions
+                                _config.AvailableVersions = phpVersions;
+                                _config.LastUpdated = DateTime.Now;
+                                ConfigService.SaveConfiguration(_config);
+                                
+                                LogService.Log($"Found {phpVersions.Count} unique PHP versions available for download.", LogLevel.DEBUG);
+                            }
+                            else
+                            {
+                                LogService.Log("Failed to fetch PHP versions or no versions found.", LogLevel.WARNING);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Log($"Error fetching PHP versions: {ex.Message}", LogLevel.ERROR);
+                            // Continue even if this fails - we can try again later
+                            LogService.Log("Warning: Failed to fetch PHP versions. Will try again later.", LogLevel.WARNING);
+                        }
                     }
                 }
                 else
                 {
-                    LogService.Log($"Using cached PHP versions from last update on {_config.LastUpdated}", LogLevel.WARNING);
+                    LogService.Log($"Using cached PHP versions from last update on {_config.LastUpdated}", LogLevel.DEBUG);
                 }
                 
                 // Initialization completed successfully
@@ -290,9 +385,9 @@ namespace PhpSwitcher.Forms
             // 
             // logoPictureBox
             // 
-            this.logoPictureBox.Location = new System.Drawing.Point(218, 20);
+            this.logoPictureBox.Location = new System.Drawing.Point(218, 130);
             this.logoPictureBox.Name = "logoPictureBox";
-            this.logoPictureBox.Size = new System.Drawing.Size(64, 64);
+            this.logoPictureBox.Size = new System.Drawing.Size(64, 40);
             this.logoPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.logoPictureBox.TabIndex = 5;
             this.logoPictureBox.TabStop = false;
@@ -373,9 +468,39 @@ namespace PhpSwitcher.Forms
                             var version = match.Groups[1].Value;
                             var isNTS = dirName.Contains("-nts");
                             
+                            // Determine if this is an x64 or x86 version
+                            bool isX64 = false;
+                            
+                            // Check if php.exe is 64-bit
+                            try
+                            {
+                                var phpExePath = Path.Combine(dir, "php.exe");
+                                using (var stream = new FileStream(phpExePath, FileMode.Open, FileAccess.Read))
+                                {
+                                    stream.Seek(0x3C, SeekOrigin.Begin);
+                                    var peOffset = new byte[4];
+                                    stream.Read(peOffset, 0, 4);
+                                    var offset = BitConverter.ToInt32(peOffset, 0);
+                                    
+                                    stream.Seek(offset + 4, SeekOrigin.Begin);
+                                    var machineType = new byte[2];
+                                    stream.Read(machineType, 0, 2);
+                                    
+                                    // 0x8664 is the machine type for x64
+                                    isX64 = BitConverter.ToUInt16(machineType, 0) == 0x8664;
+                                }
+                                
+                                LogService.Log($"Detected PHP {version} as {(isX64 ? "x64" : "x86")} architecture", LogLevel.DEBUG);
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Log($"Error determining architecture for PHP {version}: {ex.Message}. Assuming x86.", LogLevel.WARNING);
+                                isX64 = false;
+                            }
+                            
                             // Check if this version is already in the configuration
                             var existingVersion = _config.InstalledVersions.FirstOrDefault(
-                                v => v.Version == version && v.IsNTS == isNTS);
+                                v => v.Version == version && v.IsNTS == isNTS && v.IsX64 == isX64);
                             
                             if (existingVersion == null)
                             {
@@ -384,6 +509,7 @@ namespace PhpSwitcher.Forms
                                 {
                                     Version = version,
                                     IsNTS = isNTS,
+                                    IsX64 = isX64,
                                     InstallPath = dir,
                                     InstallDate = File.GetCreationTime(dir),
                                     IsActive = (activePhpPath != null && activePhpPath.Equals(dir, StringComparison.OrdinalIgnoreCase))
@@ -392,7 +518,7 @@ namespace PhpSwitcher.Forms
                                 _config.InstalledVersions.Add(newInstalledVersion);
                                 addedVersions++;
                                 
-                                LogService.Log($"Added PHP {version} {(isNTS ? "(NTS)" : "(TS)")} to installed versions", LogLevel.DEBUG);
+                                LogService.Log($"Added PHP {version} {(isNTS ? "(NTS)" : "(TS)")} {(isX64 ? "(x64)" : "(x86)")} to installed versions", LogLevel.DEBUG);
                             }
                             else
                             {
@@ -400,7 +526,7 @@ namespace PhpSwitcher.Forms
                                 if (existingVersion.InstallPath != dir)
                                 {
                                     existingVersion.InstallPath = dir;
-                                    LogService.Log($"Updated path for PHP {version} {(isNTS ? "(NTS)" : "(TS)")}: {dir}", LogLevel.DEBUG);
+                                    LogService.Log($"Updated path for PHP {version} {(isNTS ? "(NTS)" : "(TS)")} {(isX64 ? "(x64)" : "(x86)")}: {dir}", LogLevel.DEBUG);
                                 }
                                 
                                 // Update active status based on symbolic link
@@ -408,7 +534,7 @@ namespace PhpSwitcher.Forms
                                 if (existingVersion.IsActive != shouldBeActive)
                                 {
                                     existingVersion.IsActive = shouldBeActive;
-                                    LogService.Log($"Updated active status for PHP {version} {(isNTS ? "(NTS)" : "(TS)")}: {shouldBeActive}", LogLevel.DEBUG);
+                                    LogService.Log($"Updated active status for PHP {version} {(isNTS ? "(NTS)" : "(TS)")} {(isX64 ? "(x64)" : "(x86)")}: {shouldBeActive}", LogLevel.DEBUG);
                                 }
                             }
                         }

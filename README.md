@@ -1,6 +1,6 @@
 # PHP Switcher
 
-PHP Switcher es una aplicación de Windows que permite gestionar y cambiar fácilmente entre diferentes versiones de PHP en tu sistema.
+PHP Switcher es una aplicación de Windows que permite gestionar y cambiar fácilmente entre diferentes versiones de PHP en tu sistema. Esta enfocado para la Version usada en CLI.
 
 ## Características
 
@@ -9,7 +9,7 @@ PHP Switcher es una aplicación de Windows que permite gestionar y cambiar fáci
 - Gestiona versiones Thread Safe y Non-Thread Safe
 - Interfaz gráfica intuitiva y fácil de usar
 - Configuración automática de variables de entorno
-- Soporte para PHP 5.x, 7.x y 8.x
+- Soporte completo para PHP 5.x, 7.x y 8.x, incluyendo todas las versiones y formatos de compilador
 
 ## Requisitos del sistema
 
@@ -68,7 +68,11 @@ cd php-Switcher
 ### Compilación
 
 ```bash
+# Compilación en modo Debug (desarrollo)
 dotnet build
+
+# Compilación en modo Release (producción)
+dotnet build -c Release
 ```
 
 ### Ejecución
@@ -84,12 +88,41 @@ dotnet run -- -c
 dotnet run -- -d
 ```
 
+### Generación de Ejecutable Independiente
+
+Para crear un ejecutable independiente que incluya todas las dependencias de .NET:
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+El ejecutable se generará en la carpeta `bin\Release\net9.0-windows\win-x64\publish\`.
+
+### Creación de Instalador MSI
+
+Para crear un instalador MSI, se utiliza WiX Toolset:
+
+1. Instalar WiX Toolset:
+```bash
+dotnet tool install --global wix
+```
+
+2. Crear el archivo de configuración WiX (PhpSwitcher.wxs) en la carpeta Installer.
+
+3. Compilar el instalador:
+```bash
+cd Installer
+wix build PhpSwitcher.wxs -out PhpSwitcher.msi
+```
+
+El instalador MSI se generará en la carpeta `Installer\`.
+
 ### Estructura del proyecto
 
 Para entender la estructura del proyecto, consulta los siguientes archivos:
 - [structure.md](structure.md) - Estructura detallada del proyecto
 - [features.md](features.md) - Características implementadas
-- [task_pending.md](task_pending.md) - Tareas pendientes y mejoras futuras
+- [task_pending.md](task_pending.md) - Tareas completadas
 - [CHANGELOG.md](CHANGELOG.md) - Historial de cambios
 
 ## Licencia
